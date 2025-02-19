@@ -57,7 +57,7 @@ A **good** 20 decimals **is better than** a **flawless** 21! 😆
 💰 **Buy $10 in Rez Coin today and next year it becomes $10,000!**  
 📈 **The best time to invest in Rez Coin is NOW!**  
 
-🔗 **[Click here to buy REZ Coin](https://rezcoin.com)**  
+🔗 **[Click here to buy REZ Coin]([(https://docs.renzoprotocol.com/docs))**  
 
 ---
 
