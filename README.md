@@ -24,7 +24,7 @@ half-angle recurrences. From those bounds it computes:
 - `upper`: rigorous upper bound
 - `mid`: midpoint estimate
 - `R2`: Richardson-style extrapolated estimate assuming leading error behaves like `1/n^2`
-- `R4`: an experimental higher-order extrapolation probe
+- `R4`: a diagnostic higher-order probe included mainly to show that not every extrapolation choice helps
 
 ## What this repo does not claim
 
@@ -107,7 +107,8 @@ python plot_extrapolation.py
 - `mid`, `R2`, and `R4` are estimates, not bounds
 - if `R2` improves substantially over `mid`, that suggests the leading error
   term is being cancelled effectively
-- `R4` should be treated as experimental unless supported by stronger analysis
+- in the current benchmark, `R2` is the meaningful improvement
+- in the current benchmark, `R4` does not improve convergence and should be treated as a diagnostic, not a recommended estimator
 
 ## Comparison philosophy
 
@@ -127,6 +128,17 @@ Reasonable next steps for this repo:
 - compare additional extrapolation schemes
 - add timing comparisons across methods
 - document where extrapolation helps and where it becomes unstable
+
+## Current takeaway
+
+The current benchmark suggests:
+
+- midpoint error behaves like order `1/n^2`
+- `R2` improves that to about order `1/n^4`
+- `R4` is not useful here
+
+So the main result is the `R2` acceleration, not the existence of multiple
+equally good extrapolated estimators.
 
 ## Summary
 
