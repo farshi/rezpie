@@ -9,6 +9,7 @@ The focus is on understanding convergence:
 - how inscribed and circumscribed polygons bound `pi`
 - how fast those bounds tighten
 - whether extrapolation can improve a basic polygon estimate
+- whether perimeter and area approximations can be combined to cancel leading error terms
 
 ## What this repo does
 
@@ -25,6 +26,7 @@ half-angle recurrences. From those bounds it computes:
 - `mid`: midpoint estimate
 - `R2`: Richardson-style extrapolated estimate assuming leading error behaves like `1/n^2`
 - `R4`: a diagnostic higher-order probe included mainly to show that not every extrapolation choice helps
+- geometry-first perimeter/area blends, including the derived `alpha = 2/3` blend
 
 ## What this repo does not claim
 
@@ -51,6 +53,12 @@ kind of baseline for high-precision comparison.
 
 - `chudnovsky.py`
   A direct Chudnovsky implementation used as a serious reference method.
+
+- `geometry_pi.py`
+  Geometry-first perimeter and area families, plus blending and extrapolation helpers.
+
+- `benchmark_geometry.py`
+  Compares perimeter midpoint, area midpoint, the derived `2/3` blend, and `R4` on that blend.
 
 ## Mathematical idea
 
@@ -139,6 +147,25 @@ The current benchmark suggests:
 
 So the main result is the `R2` acceleration, not the existence of multiple
 equally good extrapolated estimators.
+
+## Geometry-first takeaway
+
+The current geometry-first benchmark suggests a stronger structure:
+
+- perimeter midpoint error behaves like `+c / n^2`
+- area midpoint error behaves like `-2c / n^2`
+- blending them with `alpha = 2/3` cancels the leading `1/n^2` term
+- that blend behaves like order `1/n^4`
+- applying Richardson with `p = 4` to the blend produces an estimator with observed order `1/n^6`
+
+This is the strongest result in the repo so far:
+
+> perimeter midpoint -> order 2  
+> `2/3` perimeter-area blend -> order 4  
+> `R4` on that blend -> order 6
+
+That is still not a challenge to Chudnovsky as a high-precision method, but it
+is a respectable convergence-acceleration result for a geometry-first approach.
 
 ## Summary
 
