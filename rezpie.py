@@ -1,25 +1,51 @@
-from mpmath import mp, sin, tan, pi, exp, j
+from mpmath import mp, sqrt
 
-# Set precision to 200 decimal places
-mp.dps = 200
 
-def compute_pi_rezpie(max_iterations=1000):
-    n = mp.mpf(6)  # Start with a hexagon
-    for _ in range(max_iterations):
-        pi_polygon = n * sin(pi / n)
-        pi_extrapolated = 4 * tan(pi / n) / n
-        tangent_correction = ((pi_extrapolated - pi_polygon) / (n**2) +
-                               ((pi_extrapolated - pi_polygon) ** 2) / (2 * n**3) +
-                               ((pi_extrapolated - pi_polygon) ** 3) / (3 * n**4))
-        pi_optimized = pi_polygon + tangent_correction
+def polygon_bounds(iterations: int = 20):
+    n = 6
+    s = mp.mpf(1)
+    t = 2 / sqrt(3)
+
+    rows = []
+
+    for _ in range(iterations):
+        lower = (n * s) / 2
+        upper = (n * t) / 2
+        mid = (lower + upper) / 2
+
+        rows.append(
+            {
+                "n": n,
+                "lower": lower,
+                "upper": upper,
+                "mid": mid,
+                "width": upper - lower,
+            }
+        )
+
+        s_next = sqrt(2 - sqrt(4 - s**2))
+        t_next = (2 * s_next) / sqrt(4 - s_next**2)
+
+        s = s_next
+        t = t_next
         n *= 2
-    return pi_optimized
 
-def compute_pi_chudnovsky():
-    return mp.pi
+    return rows
 
-pi_rezpie = compute_pi_rezpie()
-pi_chudnovsky = compute_pi_chudnovsky()
 
-print(f"RezPie π: {pi_rezpie}")
-print(f"Chudnovsky π: {pi_chudnovsky}")
+def richardson_extrapolate(a_n, a_2n, p: int):
+    factor = mp.mpf(2) ** p
+    return (factor * a_2n - a_n) / (factor - 1)
+
+
+def correct_digits(x, ref):
+    err = abs(x - ref)
+    if err == 0:
+        return mp.inf
+    return max(0, int(mp.floor(-mp.log10(err))))
+
+
+def observed_order(err_n, err_2n):
+    if err_n == 0 or err_2n == 0:
+        return mp.inf
+    return mp.log(err_n / err_2n, 2)

@@ -1,100 +1,96 @@
-from mpmath import mp, sin, tan, pi, exp, j
+from mpmath import mp
 
-# Set precision to 200 decimal places
-mp.dps = 200 
+from rezpie import (
+    polygon_bounds,
+    richardson_extrapolate,
+    correct_digits,
+    observed_order,
+)
+from chudnovsky import chudnovsky_pi
 
-def compute_pi_optimized(max_iterations=1000):
-    """Computes π using an improved geometric-tangent method efficiently."""
-    n = mp.mpf(6)  # Start with a hexagon
-    pi_estimates = []
+mp.dps = 100
 
-    for i in range(max_iterations):
-        # Polygon-based approximation
-        pi_polygon = n * sin(pi / n)
 
-        # Extrapolation correction (avoiding sum for efficiency)
-        pi_extrapolated = 4 * tan(pi / n) / n  
+def benchmark_polygon(iterations: int = 14):
+    ref = mp.pi
+    rows = polygon_bounds(iterations)
 
-        # Higher-order tangent correction
-        tangent_correction = ((pi_extrapolated - pi_polygon) / (n**2) +
-                               ((pi_extrapolated - pi_polygon) ** 2) / (2 * n**3) +
-                               ((pi_extrapolated - pi_polygon) ** 3) / (3 * n**4))
+    print("Polygon / extrapolation study")
+    print("-----------------------------")
+    print(
+        f"{'n':>8} "
+        f"{'mid err':>14} "
+        f"{'R2 err':>14} "
+        f"{'R4 err':>14} "
+        f"{'mid digs':>9} "
+        f"{'R2 digs':>9} "
+        f"{'R4 digs':>9}"
+    )
 
-        # Refined π approximation
-        pi_optimized = pi_polygon + tangent_correction
+    mid_errors = []
+    r2_errors = []
+    r4_errors = []
 
-        # Store estimates
-        pi_estimates.append(pi_optimized)
+    for i in range(len(rows) - 1):
+        curr = rows[i]
+        nxt = rows[i + 1]
 
-        # Double the polygon sides
-        n *= 2  
+        mid_n = curr["mid"]
+        mid_2n = nxt["mid"]
 
-    return pi_estimates[-1]
+        r2 = richardson_extrapolate(mid_n, mid_2n, p=2)
+        r4 = richardson_extrapolate(mid_n, mid_2n, p=4)
 
-def compute_pi_chudnovsky():
-    """Computes π using the Chudnovsky algorithm."""
-    return mp.pi  # Chudnovsky is the default high-precision method in mpmath
+        mid_err = abs(mid_n - ref)
+        r2_err = abs(r2 - ref)
+        r4_err = abs(r4 - ref)
 
-def compute_pi_bbp():
-    """Computes π using the Bailey–Borwein–Plouffe (BBP) algorithm."""
-    bbp_pi = mp.mpf(0)
-    k = 0
-    while k < 100:  # More terms increase precision
-        bbp_pi += (mp.power(16, -k) * 
-                   (mp.mpf(4)/(8*k+1) - mp.mpf(2)/(8*k+4) - 
-                    mp.mpf(1)/(8*k+5) - mp.mpf(1)/(8*k+6)))
-        k += 1
-    return bbp_pi
+        mid_errors.append(mid_err)
+        r2_errors.append(r2_err)
+        r4_errors.append(r4_err)
 
-# Compute π using all methods
-pi_optimized = compute_pi_optimized()
-pi_chudnovsky = compute_pi_chudnovsky()
-pi_bbp = compute_pi_bbp()  # Our neutral judge
+        print(
+            f"{curr['n']:8d} "
+            f"{mp.nstr(mid_err, 6):>14} "
+            f"{mp.nstr(r2_err, 6):>14} "
+            f"{mp.nstr(r4_err, 6):>14} "
+            f"{correct_digits(mid_n, ref):9} "
+            f"{correct_digits(r2, ref):9} "
+            f"{correct_digits(r4, ref):9}"
+        )
 
-# Compute deviations
-deviation_optimized = abs(pi_optimized - pi_bbp)
-deviation_chudnovsky = abs(pi_chudnovsky - pi_bbp)
+    print("\nObserved convergence order")
+    print(
+        f"{'n':>8} "
+        f"{'mid order':>14} "
+        f"{'R2 order':>14} "
+        f"{'R4 order':>14}"
+    )
 
-# Determine the winner
-if deviation_optimized < deviation_chudnovsky:
-    winner = "RezPie Method 🎉"
-elif deviation_chudnovsky < deviation_optimized:
-    winner = "Chudnovsky 🏆"
-else:
-    winner = "It's a Tie! 🤝"
+    for i in range(len(mid_errors) - 1):
+        print(
+            f"{rows[i]['n']:8d} "
+            f"{mp.nstr(observed_order(mid_errors[i], mid_errors[i + 1]), 6):>14} "
+            f"{mp.nstr(observed_order(r2_errors[i], r2_errors[i + 1]), 6):>14} "
+            f"{mp.nstr(observed_order(r4_errors[i], r4_errors[i + 1]), 6):>14}"
+        )
 
-# Print results
-print("\n### Final π Comparison ###")
-print(f"π (RezPie Method): {pi_optimized}")
-print(f"π (Chudnovsky Method): {pi_chudnovsky}")
-print(f"π (BBP Judge): {pi_bbp}")
 
-print("\n### Deviations from BBP ###")
-print(f"Deviation (RezPie): {deviation_optimized}")
-print(f"Deviation (Chudnovsky): {deviation_chudnovsky}")
+def benchmark_chudnovsky():
+    ref = mp.pi
 
-print("\n### 🏆 The Winner is:", winner, "🏆 ###")
+    print("\nChudnovsky comparison")
+    print("---------------------")
+    print(f"{'terms':>8} {'error':>18} {'digits':>10}")
 
-### **Testing Euler's Identity**
-euler_test_optimized = exp(j * pi_optimized)
-euler_test_chudnovsky = exp(j * pi_chudnovsky)
+    for terms in [1, 2, 4, 6, 8]:
+        value = chudnovsky_pi(terms)
+        err = abs(value - ref)
+        digs = correct_digits(value, ref)
+        print(f"{terms:8d} {mp.nstr(err, 8):>18} {digs:10}")
 
-deviation_euler_optimized = abs(euler_test_optimized + 1)
-deviation_euler_chudnovsky = abs(euler_test_chudnovsky + 1)
 
-print("\n### Euler's Identity Test ###")
-print(f"e^(i * π_optimized) = {euler_test_optimized}")
-print(f"Deviation from -1 (Optimized): {deviation_euler_optimized}")
-
-print(f"\ne^(i * π_chudnovsky) = {euler_test_chudnovsky}")
-print(f"Deviation from -1 (Chudnovsky): {deviation_euler_chudnovsky}")
-
-# Who wins Euler's test?
-if deviation_euler_optimized < deviation_euler_chudnovsky:
-    euler_winner = "RezPie Method 🎉"
-elif deviation_euler_chudnovsky < deviation_euler_optimized:
-    euler_winner = "Chudnovsky 🏆"
-else:
-    euler_winner = "It's a Tie! 🤝"
-
-print("\n### 🏆 Euler's Identity Winner:", euler_winner, "🏆 ###")
+if __name__ == "__main__":
+    print(f"Reference pi: {mp.nstr(mp.pi, 40)}\n")
+    benchmark_polygon()
+    benchmark_chudnovsky()

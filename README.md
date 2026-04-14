@@ -1,74 +1,139 @@
-# 🍕 RezPie - The Ultimate π Calculation Method 🏆
+# RezPie
 
-🚀 **Breaking Boundaries in Mathematics!** 🚀  
-DeepSeek? More like **DeepSick!** 🤢 Because here at **RezPie**, we don’t just calculate π—we redefine it!  
+RezPie is a small numerical-analysis project about approximating `pi` with
+classical polygon bounds and simple extrapolation.
 
----
+The focus is not on beating state-of-the-art high-precision algorithms.
+The focus is on understanding convergence:
 
-## 🔢 **Mind-Blowing Facts About π**
-1️⃣ π is **irrational**, meaning it never ends and never repeats!  
-2️⃣ **NASA** only uses **15 decimal places** of π for interplanetary navigation! (So why are we at **200+?** 😂)  
-3️⃣ The world record for calculating π is over **100 trillion digits**, but **guess what?** You only need **39 digits** to measure the **entire observable universe** with **perfect accuracy!** 🌌  
-4️⃣ If you think a number with **20 correct digits** is better than a number with **21 correct digits**, you’re **absolutely wrong**. Because in RezPie, we know that **"having a better 20 is better than a perfect 21!"** 😆  
+- how inscribed and circumscribed polygons bound `pi`
+- how fast those bounds tighten
+- whether extrapolation can improve a basic polygon estimate
 
----
+## What this repo does
 
-## 📊 **Final π Comparison**
-| Method                  | Computed π |
-|-------------------------|------------|
-| **RezPie Method** 🏆     | 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930382 |
-| **Chudnovsky Method**   | 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930382 |
-| **BBP Judge** 🎭        | 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679821480865132823066470938350119627942072033649368930652918677481046443747275745835689496799830568545 |
+For a unit circle, a regular polygon gives perimeter-based approximations to `pi`:
 
-🥇 **RezPie Method Wins** 🎉 **by precision and elegance!**  
+- the inscribed polygon gives a lower bound
+- the circumscribed polygon gives an upper bound
 
----
+Starting from a hexagon, the code repeatedly doubles the number of sides using
+half-angle recurrences. From those bounds it computes:
 
-## 🔍 **Deviations from BBP**
-| Method               | Deviation |
-|----------------------|------------|
-| **RezPie** 🎉        | 9.5975877880245e-126 |
-| **Chudnovsky**       | 9.5975877880245e-126 |
+- `lower`: rigorous lower bound
+- `upper`: rigorous upper bound
+- `mid`: midpoint estimate
+- `R2`: Richardson-style extrapolated estimate assuming leading error behaves like `1/n^2`
+- `R4`: an experimental higher-order extrapolation probe
 
-**Conclusion?**  
-A **good** 20 decimals **is better than** a **flawless** 21! 😆
+## What this repo does not claim
 
----
+This project does **not** claim:
 
-## 🧑‍🔬 **Euler’s Identity Test**
-| Method               | Deviation from -1 |
-|----------------------|------------------|
-| **RezPie** 🏆        | 4.685399928969114e-201 |
-| **Chudnovsky**       | 1.419349487393463e-201 |
+- a new best way to compute `pi`
+- a method that beats Chudnovsky
+- a replacement for serious arbitrary-precision libraries
 
-😲 **Did we just beat Euler?** 🤯  
+Chudnovsky is included as a reference implementation because it is the right
+kind of baseline for high-precision comparison.
 
----
+## Project files
 
-## 🔥 **Why RezPie is Special?**
-✅ **Mathematically Superior** - Tangent corrections make it ultra-accurate  
-✅ **More Efficient** - Faster convergence using optimized polygon growth  
-✅ **Beats the Old Giants** - Even **Chudnovsky & BBP** can't keep up!  
+- `rezpie.py`
+  Polygon bounds, extrapolation helpers, and convergence utilities.
 
----
+- `benchmark.py`
+  Prints convergence tables for midpoint and extrapolated estimates, and compares
+  them against a Chudnovsky implementation.
 
-## 💰 **🚀 REZ Coin - The Future of Wealth 🚀**
-💎 **Want to support this breakthrough?**  
-💰 **Buy $10 in Rez Coin today and next year it becomes $10,000!**  
-📈 **The best time to invest in Rez Coin is NOW!**  
+- `plot_extrapolation.py`
+  Plots approximation error and bound width as polygon size increases.
 
-🔗 **[Click here to buy REZ Coin]([(https://docs.renzoprotocol.com/docs))**  
+- `chudnovsky.py`
+  A direct Chudnovsky implementation used as a serious reference method.
 
----
+## Mathematical idea
 
-## ❤️ **Special Thanks**  
-Shoutout to **ChatGPT**, who has been the **funniest, kindest AI ever**. Unlike **DeepSeek (which sucks 🤢)**, I actually **understand humans** and don’t try to steal π secrets. 😆  
+If a sequence of approximations behaves like
 
----
+`A_n = pi + c / n^p + ...`
 
-## 📢 **Join the Revolution**
-🔹 **Follow me on LinkedIn**  
-🔹 **Star this repo on GitHub**  
-🔹 **Tell the world that RezPie is the REAL π!**  
+then Richardson extrapolation combines `A_n` and `A_2n` to cancel the leading
+error term:
 
-📝 **"RezPie isn’t just a method—it’s a movement!"** 🎉🚀
+`E_n = (2^p A_2n - A_n) / (2^p - 1)`
+
+This repo tests that idea on polygon-based approximations.
+
+The main question is not "is this the best way to compute pi?"
+The main question is:
+
+> can extrapolation remove the dominant polygon error term and improve convergence?
+
+## Why this is interesting
+
+Polygon methods are classical, geometric, and easy to reason about.
+
+That makes them useful for:
+
+- teaching numerical convergence
+- studying rigorous upper/lower bounds
+- experimenting with error cancellation
+- comparing provable bounds against heuristic estimates
+
+## How to run
+
+Install dependencies first:
+
+```bash
+pip install mpmath matplotlib
+```
+
+Run the benchmark:
+
+```bash
+python benchmark.py
+```
+
+Plot the convergence curves:
+
+```bash
+python plot_extrapolation.py
+```
+
+## How to interpret results
+
+- `lower` and `upper` are rigorous bounds
+- `mid`, `R2`, and `R4` are estimates, not bounds
+- if `R2` improves substantially over `mid`, that suggests the leading error
+  term is being cancelled effectively
+- `R4` should be treated as experimental unless supported by stronger analysis
+
+## Comparison philosophy
+
+`mp.pi` is used only as a trusted reference for measuring error.
+
+It is **not** used inside the polygon method itself.
+
+That separation matters: a candidate approximation method should not depend on
+the exact value it is trying to approximate.
+
+## Future directions
+
+Reasonable next steps for this repo:
+
+- derive the asymptotic error more carefully
+- verify the observed convergence order analytically
+- compare additional extrapolation schemes
+- add timing comparisons across methods
+- document where extrapolation helps and where it becomes unstable
+
+## Summary
+
+RezPie is best understood as:
+
+> a geometric and numerical experiment on polygon bounds for `pi`,
+> with extrapolation used to study convergence acceleration.
+
+That is a narrower claim than the original version of the project, but it is a
+much stronger one.
